@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>五子棋</title>
+		<style type="text/css">
+			#chess{
+				margin: auto;
+				display: block;
+				box-shadow: 5px 5px 5px #808080,-2px -2px 2px #D5D5D5;
+				cursor:pointer ;
+			}
+		</style>
+	</head>
+	<body>
+		<h3 align="center">五子棋</h3>
+		<canvas id="chess" width="675px" height="675px"></canvas>
+		</div>
+	</body>
+    <script>
+        //画布画笔
+        var chess=document.getElementById("chess");
+        //context可以看作画笔
+        var context =chess.getContext("2d");
+        //画笔的颜色
+        context.strokeStyle="#bfbfbf";
+
+        //加载棋盘
+        window.onload=function(){
+            //页面加载完成事件
+            for(var i=0;i<22.5;i++){
+                //横线（X,Y)起始点
+                context.moveTo(22.5,22.5+45*i);
+                //横线（X,Y)终止点
+                context.lineTo(652.5,22.5+45*i);
+                //画一条线
+                context.stroke();
+
+                //竖线（Y,X)起始点
+                context.moveTo(22.5+45*i,22.5);
+                //竖线（Y,X)终止点
+                context.lineTo(22.5+45*i,652.5);
+                //画一条线
+                context.stroke();
+            }
+        }
+
+        chess.onclick=function(e){
+            
+            //得到点击的X坐标
+            var i=(e.offsetX/45)|0;
+            //得到点击的Y坐标
+            var j=(e.offsetY/45)|0;
+            //赋值
+            var x=i;
+            var y=j;
+            
+            oneStep(x,y,true);
+        }
+        //这里player true为玩家   false为电脑
+        function oneStep(x,y,player){
+            var color;
+            //开始画圆
+            context.beginPath();
+            //(x,y,半径，起始点，终止点2*PI即360度)
+            context.arc(22.5+45*x,22.5+45*y,13,0,2*Math.PI)
+            //结束画圆
+            context.closePath();
+
+            if(player){
+            //玩家的颜色
+            color="hotpink";
+            }else{
+                //电脑的颜色
+                color="red";
+            }
+
+            //设置填充色
+            context.fillStyle=color;
+            //填充颜色额
+            context.fill();
+        }
+
+        //赢法数组
+        var wins=[];
+        for(var i=0;i<22.5;i++){
+            //定义三维数组
+            wins[i]=[];
+            for(var j=0;j<22.5;j++){
+                wins[i][j]=[];
+            }
+        }
+        //（x，y）在的赢法种类
+        var count=0;
+        //横线能赢情况
+        for(var x=0;x<11;x++){
+            for(var y=0;y<15;y++){
+                for(var z=0;z<5;z++){
+                    //z代表向后5个字
+                    //true代表是一种赢法，用count记录下来
+                    wins[x+z][y][count]=true;
+                }
+                count++;
+                //(x,y在另一个赢法中)
+            }
+        }
+        //竖线能赢的情况
+        for(var x=0;x<15;x++){
+            for(var y=0;y<11;y++){
+                for(var z=0;z<5;z++){
+                    wins[x][y+z][count]=true;
+                }
+                count++;
+            }
+        }
+        //正斜线能赢的情况
+        for(var x=0;x<11;x++){
+            for(var y=0;y<11;y++){
+                for(var z=0;z<5;z++){
+                    wins[x+z][y+z][count]=true;
+                }
+                count++;
+            }
+        }
+        //反斜线能赢的情况
+        for(var x=0;x<11;x++){
+            for(var y=4;y<15;y++){
+                for(var z=0;z<5;z++){
+                    wins[x+z][y-z][count]=true;
+                }
+                count++;
+            }
+        }
+        //遍历棋盘，是否有棋子，默认为0没有
+        var isChess=[]
+        for(var i=0;i<15;i++){
+            isChess[i]=[];
+            for(var j=0;j<15;j++){
+                isChess[i][j]=0;
+            }
+        }
+        
+        //人和电脑赢的子占赢法的情况
+        var manWin=[];
+        var computerWin=[];
+        for(var i=0;i<count;i++){
+            manWin[i]=0;
+            computerWin[i]=0;
+        }
+        //玩家点击下棋
+        chess.onclick=function(e){
+            var i=(e.offsetX/30)|0;
+            var j=(e.offsetY/30)|0;
+
+            var x=i;
+            var y=j;
+            //是否有棋子，没有下子
+            if(isChess[x][y]==0){
+                //值变1，代表有棋子
+                isChess[x][y]=1;
+                //玩家颜色
+                oneStep(x,y,true);
+                //遍历赢法
+                for(var i=0;i<count;i++){
+                    //(x,y)在赢法i上，该赢法将赢数加一
+                    if(wins[x][x][i]){
+                        manWin[i]++;
+                    }
+                    //为5，赢了
+                    if(manWin[1]===5){
+                        alert("你赢啦");
+                    }
+                }
+                //玩家下过棋后该电脑下
+                computerPlayerAction();
+            }
+        }
+        function computerPlayerAction(){
+            var max=0;
+            //电脑棋x坐标
+            var u=0;
+            //电脑棋y坐标
+            var v=0;
+
+            //玩家赢的权值
+            var manOfvalue=[];
+            //电脑赢的权值
+            var computerOfValue=[];
+
+            for(var x=0;x<15;x++){
+                manOfvalue[x]=[];
+                computerOfValue[x]=[];
+                for(var y=0;y<15;y++){
+                    manOfvalue[x][y]=0;
+                    computerOfValue[x][y]=0;
+                }
+            }
+            for(var x=0;x<15;x++){
+                for(var y=0;y<15;y++){
+                    //查找空白棋
+                    if(isChess[x][y]==0){
+                        //遍历count
+                        for(var i=0;i<count;i++){
+                            if(wins[x][y][i]){
+                                //给予权值
+                                if(manWin[i]==1){
+                                    manOfvalue[x][y]+=200;
+                                }else if(manWin[i]==2){
+                                    manOfvalue[x][y]+=400;
+                                }else if(manWin[i]==3){
+                                    manOfvalue[x][y]+=2000;
+                                }else if(manWin[i]==4){
+                                    manOfvalue[x][y]+=10000;
+                                }
+                                //电脑相同条件权值要比玩家高 （是否自己赢）
+                                if(computerWin[i]==1){
+                                    computerOfValue[x][y]+=220;
+                                } if(computerWin[i]==2){
+                                    computerOfValue[x][y]+=420;
+                                } if(computerWin[i]==3){
+                                    computerOfValue[x][y]+=2200;
+                                } if(computerWin[i]==4){
+                                    computerOfValue[x][y]+=20000;
+                                }
+                            }
+                            //循环判断最大权值
+                            if( manOfvalue[x][y]>max){
+                                max=manOfvalue[x][y];
+                                u=x;
+                                v=y;
+                            }
+                            if(computerOfValue[x][y]>max){
+                                max=computerOfValue[x][y];
+                                u=x;
+                                v=y;
+                            }
+                        }
+                    }
+                }
+            }
+            //电脑判断完成，下棋
+            oneStep(u,v,false);
+            //标记已下
+            isChess[u][v]=1;
+            //(x,y)在赢法i上 该赢法将赢数加一
+            for(var i=0;i<count;i++){
+                if(wins[u][v][i]){
+                    computerWin[i]++;
+                }
+                if(computerWin[i]===5){
+                    alert("电脑赢了");
+                }
+            }
+
+        }
+    </script>
+</html>
